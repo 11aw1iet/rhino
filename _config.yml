@@ -5,4 +5,5 @@ google_analytics:
 theme: jekyll-theme-architect
 remote_theme : pages-themes/architect
 url : "https://11aw1iet.github.io/rhino" # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
-baseurl : 
+baseurl :
+future : TRUE
