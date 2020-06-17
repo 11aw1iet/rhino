@@ -116,30 +116,42 @@ datatable(A1,
 - 세부 모델별 요약
 
 ### Bagging
+
     - 중요변수: 사업체 수, 유입교통량, 공시지가, 유출교통량, 대학 수
-    - 이미지파일: VI_bagging.png
+    
     - R파일: modeling1_bagging2.R
+    
+![(그림 3 - bagging)](https://github.com/statkwon/rhino/blob/master/plot/variableImportance/VI_bagging.png?raw=true)
 
 ### Decision Tree
+
     - 중요변수: 유입교통량,유출교통량, enterprise, day_pop, distributor
-    - 이미지파일: VI_decisiontree.png
+
     - R파일: modeling1_decisiontree.R
+    
+![(그림 4 - decision tree)](https://github.com/statkwon/rhino/blob/master/plot/variableImportance/VI_decisiontree.png?raw=true)
 
 ### Random Forest
+
     - 중요변수: inflow, enterprise,유출교통량, university, distributor
-    - 이미지파일: VI_randomforest.png
+   
     - R파일: modeling1_randomfrest.R
+    
+![(그림 5 - randomforest)](https://github.com/statkwon/rhino/blob/master/plot/variableImportance/VI_randomforest.png?raw=true)
 
 # Modeling2 : 근거리 수소충전소 변수와 수소차 대수의 상관관계 분석
 
 ## 의미 : 특정 입지의 충전소가 창출하는 수소차의 수요
 ### GLM Modeling
+
     - 가깝든 멀든 전부 유의미한 상관관계(정도의 차이는 있음)
+    
     - R파일: modeling2_glm.R
 
 # Modeling3 : 최종예측모델 선정
 
 ## 의미 : 특정 입지의 충전소가 창출하는 수소차의 수요
+
 - 목표: MSE 계산을 통해, 해석력과 예측력을 골고루 갖춘 모형 선택
 1. DecisionTree: 27.86282 
     - R파일: modeling3_decisiontree.R
