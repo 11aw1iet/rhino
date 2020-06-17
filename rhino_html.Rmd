@@ -102,10 +102,8 @@ A1 <- readr::read_csv('https://raw.githubusercontent.com/statkwon/rhino/master/v
 library(DT)
 
 datatable(A1, 
-          caption = "데이터 전처리 결과물", 
-          filter="top")
+          caption = "데이터 전처리 결과물")
 ```
-
 
 # Modeling 1 : Variable Importance 파악
 
@@ -116,52 +114,136 @@ datatable(A1,
 - 세부 모델별 요약
 
 ### Bagging
-    - 중요변수: 사업체 수, 유입교통량, 공시지가, 유출교통량, 대학 수
-    - 이미지파일: VI_bagging.png
-    - R파일: modeling1_bagging2.R
+
+- 중요변수: 사업체 수, 유입교통량, 공시지가, 유출교통량, 대학 수
+    
+- R파일: [modeling1_bagging2.R](https://github.com/statkwon/rhino/blob/master/code/modeling/modeling1_bagging2.R)
+    
+![(그림 3 - bagging)](https://github.com/statkwon/rhino/blob/master/plot/variableImportance/VI_bagging.png?raw=true)
 
 ### Decision Tree
-    - 중요변수: 유입교통량,유출교통량, enterprise, day_pop, distributor
-    - 이미지파일: VI_decisiontree.png
-    - R파일: modeling1_decisiontree.R
+
+- 중요변수: 유입교통량,유출교통량, 기업체 수, 주간인구수, 유통업체 수
+
+- R파일: [modeling1_decisiontree.R](https://github.com/statkwon/rhino/blob/master/code/modeling/modeling1_decisiontree.R)
+    
+![(그림 4 - decision tree)](https://github.com/statkwon/rhino/blob/master/plot/variableImportance/VI_decisiontree.png?raw=true)
 
 ### Random Forest
-    - 중요변수: inflow, enterprise,유출교통량, university, distributor
-    - 이미지파일: VI_randomforest.png
-    - R파일: modeling1_randomfrest.R
+
+- 중요변수: 유입교통량, 기업체 수, 유출교통량, 대학 수, 유통업체 수
+   
+- R파일: [modeling1_randomfrest.R](https://github.com/statkwon/rhino/blob/master/code/modeling/modeling1_randomforest.R)
+    
+![(그림 5 - randomforest)](https://github.com/statkwon/rhino/blob/master/plot/variableImportance/VI_randomforest.png?raw=true)
 
 # Modeling2 : 근거리 수소충전소 변수와 수소차 대수의 상관관계 분석
 
 ## 의미 : 특정 입지의 충전소가 창출하는 수소차의 수요
 ### GLM Modeling
-    - 가깝든 멀든 전부 유의미한 상관관계(정도의 차이는 있음)
-    - R파일: modeling2_glm.R
+
+- 가깝든 멀든 전부 유의미한 상관관계(정도의 차이는 있음)
+    
+- R파일: [modeling2_glm.R](https://github.com/statkwon/rhino/blob/master/code/modeling/modeling2_glm.R)
 
 # Modeling3 : 최종예측모델 선정
 
 ## 의미 : 특정 입지의 충전소가 창출하는 수소차의 수요
+
 - 목표: MSE 계산을 통해, 해석력과 예측력을 골고루 갖춘 모형 선택
-1. DecisionTree: 27.86282 
-    - R파일: modeling3_decisiontree.R
-2. GLM: 5.76
-    - R파일: modeling3_glm2.R
+1. DecisionTree의 MSE : 27.86282 
+    - R파일: [modeling3_decisiontree.R](https://github.com/statkwon/rhino/blob/master/code/modeling/modeling3_decisiontree.R)
+2. GLM의 MSE : 5.76
+    - R파일: [modeling3_glm2.R](https://github.com/statkwon/rhino/blob/master/code/modeling/modeling3_glm2.R)
 - 결론: MSE가 더 작은 GLM 선택
 
 # 최종 모델링
+
 - cv를 이용한 glm 모델 사용
 
 - 새로운 충전소가 추가되었을 때, 가까운 충전소 거리가 최신화 됨을 이용하여 test set 형성
-```r
-new_gas <- loc_data[loc_data$idx ==150,]
-```
   - 50번째줄의 숫자를 바꿔서 각 행정동별로 수소차 변동 예측이 확인 가능하다.
 
 - 변화된 test set에 따라서 자치구 별 차량 대수 예측
 - 결과 비교 : 
 before/ before_pred / after_pred -> 원래 차량수 / 차량수 예측(현재 기준) / 차량수 예측(충전소가 설치됨을 반영)
+```
+#라이브러리 가져오기
+library(tidyverse)
+library(dplyr)
+library(caret)
+library(kernlab)
+library(tidyverse)
 
+#데이터 가져오기
+car_gu <- read.csv('data/cleansing/car_gu.csv')
+car <- read.csv('data/cleansing/car_v2.csv')
+pop <- read.csv('data/cleansing/population.csv')
+gas <- read.csv('data/cleansing/gasstation_imputation.csv')
+
+#전처리
+pop <- pop %>% 
+  janitor::clean_names()
+total_pop <- pop %>%
+  group_by(jachigu) %>%
+  summarise(total_pop = sum(gye)) #구별 인구수 계산
+car_gu <- cbind(car_gu, total_pop[,2]) #데이터 합치기
+gas <- gas %>% 
+  select(-car)
+data <- merge(car_gu, gas, by = 'gu')
+data <- data %>% 
+  select(-c('gu','r1_from','r2_from','r3_from','r4_from', 'lat','lng'))
+data <- data %>% 
+  select(c("Hyd_car","r1", "r2", "outflow", "land_value", "enterprise", "distributor") )
+
+data
+
+#CV
+a <- order(runif(dim(data)[1]))
+folds <- createFolds(a, k = 10)
+ctrl <- trainControl(method="repeatedcv", number=10, repeats=5)
+modFit_repeatedcv <- train(Hyd_car ~., data=data, method="glm", trControl = ctrl)
+
+#simulation from glm model
+col_model <- colnames(data)
+data_new <- car_gu %>%
+  full_join(gas, by ="gu") %>%
+  select(all_of(col_model), lat, lng) %>% 
+  mutate(d1 = r1, d2 = r2, before_car = Hyd_car) %>% 
+  select(-c(r1,r2, Hyd_car))
+
+loc_data <- car %>% 
+  mutate(idx = row_number()) %>% 
+  select(idx, gu, dong ,lat, lng)
+
+#Edit here idx number
+new_gas <- loc_data[loc_data$idx ==150,]
+new_gas
+data_dist <- data_new %>% 
+  mutate(d3 = sqrt((lat - new_gas$lat)^2+
+                     (lng - new_gas$lng)^2)) %>%  
+  select(d1,d2,d3)
+
+r1 <- apply(data_dist, 1, min)
+r2 <- apply(data_dist, 1, median)
+
+#generate simulation data
+data_simul <- data_new %>% 
+  select(-c(d1,d2, lat, lng)) %>% 
+  data.frame( r1, r2)
+
+# simulating by glm 
+# cross_validation_glm.R 돌리기
+simul_result <- data.frame(gu =car_gu$gu,
+                           before = data_simul$before_car,
+                           before_pred = predict(modFit_repeatedcv, data), 
+                           after_pred = predict(modFit_repeatedcv, data_simul))
+
+#compare before, after
+apply(simul_result[,2:4],2, sum)
+```
 ## 순위 산출
-```r
+```
 #Top5 산출
 a <- 0:4 #87번째줄 /Top N 까지 산출하고 싶으면 0:(N-1)로 수정하기
 idx <- data.frame(sapply(sort(pred_zip, index.return=TRUE), `[`, length(pred_zip)-a))$ix
@@ -170,6 +252,8 @@ loc_data[idx,] %>% select(gu, dong) #쌍문동, 길음동, 창동, 미아동, �
   - 결과: 쌍문동, 길음동, 창동, 미아동, 하월곡동
   - 순서대로 도봉구, 성북구, 도봉구, 강북구, 성북구
   - Top 5가 아니라 Top N 까지 산출하고 싶으면, 87번째줄 수정하기
+
+# __[시각화 Dashboard](https://ysuks.shinyapps.io/dashboard/)__
 
 
 
@@ -189,4 +273,4 @@ loc_data[idx,] %>% select(gu, dong) #쌍문동, 길음동, 창동, 미아동, �
 
 **[Rhino shiny dashbord](https://ysuks.shinyapps.io/dashboard/)에서 Rhino의 분석결과를 확인할 수 있습니다.**
 
-**[Rhino blog](https://rhinoblog.netlify.app/)**
+**[Rhino blog](https://rhinoblog.netlify.app/)에서 한눈에 보기**
