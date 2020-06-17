@@ -1,5 +1,8 @@
-title: Architect theme
-description: Architect is a theme for GitHub Pages.
+title: rhino
+description: 2020 introduction to datascience.
 show_downloads: true
 google_analytics:
 theme: jekyll-theme-architect
+remote_theme : pages-themes/architect
+url : "https://11aw1iet.github.io/rhino" # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
+baseurl : 
